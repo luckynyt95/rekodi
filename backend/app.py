@@ -12,15 +12,18 @@ Endpoints:
   POST /sms-draft    deterministic Swahili SMS reminder draft from a record
   POST /reply-classify  keyword-based intent classification of a patient SMS reply
 """
+import base64
+import hashlib
 import json
 import os
 import re
+import secrets
 import tempfile
 import uuid
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -30,6 +33,18 @@ BASE = Path(__file__).resolve().parent
 MODELS = BASE.parent / "models"
 DATA_DIR = BASE.parent / "data"
 OUTBOX = DATA_DIR / "outbox.json"
+
+# ---- Ministry connection -------------------------------------------------
+# Filled in when a ministry onboards (see README "Connecting to a ministry DHIS2").
+# While connected=False the app is honest about it: records stay safe on the
+# phone and the sync button explains what will happen, instead of erroring.
+MINISTRY = {
+    "connected": False,   # flip to True once base_url + credentials are configured
+    "base_url": None,     # e.g. "https://dhis.moh.go.ke"
+    "org_unit": None,     # facility UID
+    "username": None,     # DHIS2 service account
+    "password": None,
+}
 
 # Environment quirk shim (documented in tech_stack.md): the installed PyAV
 # (av 19.0.1) build does not accept the `metadata_errors` kwarg that
@@ -64,16 +79,131 @@ _llm = None
 _llm_failed = False
 
 
-# ---------------------------------------------------------------- storage
+# ---------------------------------------------------------------- storage (encrypted at rest)
+KEY_FILE = DATA_DIR / ".key"
+WORKERS_FILE = DATA_DIR / "workers.json"
+
+
+def _get_fernet():
+    from cryptography.fernet import Fernet
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    if not KEY_FILE.exists():
+        KEY_FILE.write_bytes(Fernet.generate_key())
+        try:
+            KEY_FILE.chmod(0o600)
+        except Exception:
+            pass
+    return Fernet(KEY_FILE.read_bytes())
+
+
+def _read_json(path, default):
+    if not path.exists():
+        return default
+    raw = path.read_bytes()
+    if raw.startswith(b"gAAAAA"):  # Fernet token -> decrypt
+        try:
+            raw = _get_fernet().decrypt(raw)
+        except Exception:
+            return default
+    return json.loads(raw.decode())
+
+
+def _write_json(path, obj):
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(_get_fernet().encrypt(
+        json.dumps(obj, ensure_ascii=False).encode()))
+
+
 def _load_outbox():
-    if OUTBOX.exists():
-        return json.loads(OUTBOX.read_text())
-    return []
+    return _read_json(OUTBOX, [])
 
 
 def _save_outbox(records):
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    OUTBOX.write_text(json.dumps(records, ensure_ascii=False, indent=2))
+    _write_json(OUTBOX, records)
+
+
+# ---------------------------------------------------------------- worker auth
+def _hash_pw(password, salt=None):
+    salt = salt or secrets.token_hex(16)
+    h = hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(),
+                            200_000).hex()
+    return f"{salt}${h}"
+
+
+def _load_workers():
+    workers = _read_json(WORKERS_FILE, {})
+    if not workers:
+        # first run: seed the documented demo account for judges
+        workers = {"demo": {"name": "Demo Nurse",
+                            "pw": _hash_pw("rekodi-demo")}}
+        _write_json(WORKERS_FILE, workers)
+    return workers
+
+
+def _save_workers(workers):
+    _write_json(WORKERS_FILE, workers)
+
+
+_sessions = {}  # token -> username (in-memory; server restart logs everyone out)
+
+
+def _new_session(username):
+    token = secrets.token_hex(24)
+    _sessions[token] = username
+    workers = _load_workers()
+    return {"ok": True, "token": token, "username": username,
+            "name": workers[username]["name"]}
+
+
+def _require_auth(request: Request):
+    uname = _sessions.get(request.headers.get("X-Token", ""))
+    if not uname or uname not in _load_workers():
+        raise HTTPException(401, "login required")
+    return uname
+
+
+class AuthIn(BaseModel):
+    username: str
+    password: str
+
+
+class RegIn(AuthIn):
+    name: str
+
+
+@app.get("/auth-status")
+def auth_status():
+    return {"ok": True, "demo_user": "demo"}
+
+
+@app.post("/register")
+def register(r: RegIn):
+    workers = _load_workers()
+    uname = r.username.strip().lower()
+    if not re.match(r"^[a-z0-9_]{3,20}$", uname):
+        raise HTTPException(400, "bad username (3-20 letters/numbers)")
+    if uname in workers:
+        raise HTTPException(400, "username taken")
+    if not r.name.strip():
+        raise HTTPException(400, "name required")
+    if len(r.password) < 4:
+        raise HTTPException(400, "password too short (min 4)")
+    workers[uname] = {"name": r.name.strip(), "pw": _hash_pw(r.password)}
+    _save_workers(workers)
+    return _new_session(uname)
+
+
+@app.post("/login")
+def login(a: AuthIn):
+    workers = _load_workers()
+    uname = a.username.strip().lower()
+    w = workers.get(uname)
+    if not w:
+        raise HTTPException(401, "wrong username or password")
+    salt, _h = w["pw"].split("$", 1)
+    if not secrets.compare_digest(_hash_pw(a.password, salt), w["pw"]):
+        raise HTTPException(401, "wrong username or password")
+    return _new_session(uname)
 
 
 # ---------------------------------------------------------------- whisper
@@ -92,8 +222,11 @@ def get_whisper():
 async def transcribe(file: UploadFile = File(...)):
     """Audio -> Swahili text. Works fully offline after the tiny model is cached."""
     suffix = Path(file.filename or "audio").suffix or ".webm"
+    data = await file.read()
+    if len(data) > 25 * 1024 * 1024:
+        raise HTTPException(413, "audio file too large (max 25MB)")
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        tmp.write(await file.read())
+        tmp.write(data)
         tmp_path = tmp.name
     try:
         model = get_whisper()
@@ -228,6 +361,19 @@ def get_llm():
     return _llm
 
 
+def _extract_phone(text: str):
+    """Find a phone-like digit run in the transcript.
+
+    Returns (number, 'low') or (None, None). Always low confidence — a wrong
+    number sends reminders to the wrong person, so the worker must verify."""
+    for m in re.finditer(r"\+?\d[\d\s\-]{6,}\d", text):
+        digits = re.sub(r"\D", "", m.group(0))
+        if 9 <= len(digits) <= 15:
+            num = "+" + digits if m.group(0).strip().startswith("+") else digits
+            return num, "low"
+    return None, None
+
+
 def heuristic_extract(text: str) -> dict:
     """Transparent documented fallback: regex/keyword extraction, all low confidence.
     Marked 'v1 heuristic; production = fine-tuned small LM'."""
@@ -324,6 +470,11 @@ def extract(inp: ExtractIn):
     except Exception as e:  # transparent fallback, never silent
         data = heuristic_extract(text)
         data["llm_error"] = str(e)[:200]
+    # phone from voice: heuristic fill on either path (worker verifies, low conf)
+    phone, pconf = _extract_phone(text)
+    if phone and not data.get("phone"):
+        data["phone"] = phone
+        data.setdefault("field_confidence", {})["phone"] = pconf
     data["source_text"] = text
     return data
 
@@ -332,6 +483,7 @@ def extract(inp: ExtractIn):
 class RecordIn(BaseModel):
     patient_name: str | None = None
     age: str | None = None
+    phone: str | None = None
     visit_date: str | None = None
     summary: str | None = None
     treatment_given: str | None = None
@@ -340,15 +492,18 @@ class RecordIn(BaseModel):
     transcript: str | None = None
     extractor: str | None = None
     field_confidence: dict = {}
+    confirmed_by: str | None = None
 
 
 @app.get("/records")
-def list_records():
+def list_records(request: Request):
+    _require_auth(request)
     return {"records": _load_outbox()}
 
 
 @app.post("/records")
-def save_record(rec: RecordIn):
+def save_record(rec: RecordIn, request: Request):
+    _require_auth(request)
     """Human-in-the-loop gate: only worker-confirmed records are saved.
     The UI never auto-saves an AI draft."""
     records = _load_outbox()
@@ -363,23 +518,21 @@ def save_record(rec: RecordIn):
 
 
 # ---------------------------------------------------------------- DHIS2 sync preview
-@app.post("/sync")
-def sync_preview():
-    """Build a DHIS2-compatible payload PREVIEW (store-and-forward).
-    No live server needed for the demo; mapping documented in tech_stack.md."""
-    records = [r for r in _load_outbox() if r.get("sync_status") == "pending"]
+def _build_events(records):
+    """Pending records -> DHIS2 /api/events payload (shared by preview + send)."""
     events = []
     for r in records:
         events.append({
             "program": "REKODI_PRIMARY_CARE",
             "programStage": "REKODI_VISIT",
-            "orgUnit": "CLINIC_ID_PLACEHOLDER",
+            "orgUnit": MINISTRY["org_unit"] or "CLINIC_ID_PLACEHOLDER",
             "eventDate": r.get("visit_date") or date.today().isoformat(),
             "status": "COMPLETED",
             "dataValues": [
                 {"dataElement": "REKODI_PATIENT_NAME",
                  "value": r.get("patient_name")},
                 {"dataElement": "REKODI_AGE", "value": r.get("age")},
+                {"dataElement": "REKODI_PHONE", "value": r.get("phone")},
                 {"dataElement": "REKODI_SUMMARY", "value": r.get("summary")},
                 {"dataElement": "REKODI_TREATMENT_GIVEN",
                  "value": r.get("treatment_given")},
@@ -395,12 +548,65 @@ def sync_preview():
                          "health worker before save. No diagnosis suggested.",
             }],
         })
+    return events
+
+
+@app.post("/sync")
+def sync_preview(request: Request):
+    _require_auth(request)
+    """Build a DHIS2-compatible payload PREVIEW (store-and-forward).
+    No live server needed for the demo; mapping documented in tech_stack.md."""
+    records = [r for r in _load_outbox() if r.get("sync_status") == "pending"]
     return {
         "preview": True,
+        "ministry_connected": MINISTRY["connected"],
         "target": "DHIS2 /api/events (ministry system, 70+ countries)",
         "record_count": len(records),
-        "events": events,
+        "events": _build_events(records),
     }
+
+
+@app.post("/sync-send")
+def sync_send(request: Request):
+    _require_auth(request)
+    """Actually send pending records to the ministry DHIS2.
+
+    Safe to call any time: it no-ops gracefully when the ministry is not
+    connected, nothing is pending, or the send fails (records stay pending).
+    Only marks records 'synced' after the server confirms receipt."""
+    if not MINISTRY["connected"] or not MINISTRY["base_url"]:
+        return {"sent": 0, "reason": "ministry_not_connected"}
+    records = [r for r in _load_outbox() if r.get("sync_status") == "pending"]
+    if not records:
+        return {"sent": 0, "reason": "nothing_pending"}
+    import base64
+    import urllib.request
+    import urllib.error
+    body = json.dumps({"events": _build_events(records)}).encode()
+    req = urllib.request.Request(
+        MINISTRY["base_url"].rstrip("/") + "/api/events",
+        data=body, method="POST",
+        headers={"Content-Type": "application/json"},
+    )
+    if MINISTRY.get("username"):
+        cred = base64.b64encode(
+            f"{MINISTRY['username']}:{MINISTRY.get('password') or ''}".encode()
+        ).decode()
+        req.add_header("Authorization", "Basic " + cred)
+    try:
+        with urllib.request.urlopen(req, timeout=25) as resp:
+            ok = 200 <= resp.status < 300
+    except Exception as e:
+        return {"sent": 0, "reason": "send_failed", "detail": str(e)[:120]}
+    if not ok:
+        return {"sent": 0, "reason": "send_failed"}
+    sent_ids = {r["id"] for r in records if r.get("id")}
+    all_recs = _load_outbox()
+    for r in all_recs:
+        if r.get("id") in sent_ids:
+            r["sync_status"] = "synced"
+    _save_outbox(all_recs)
+    return {"sent": len(records), "reason": "ok"}
 
 
 # ---------------------------------------------------------------- follow-ups
@@ -418,7 +624,8 @@ def _followup_status(fdate: str) -> str:
 
 
 @app.get("/followups")
-def followups():
+def followups(request: Request):
+    _require_auth(request)
     items = []
     for r in _load_outbox():
         fd = r.get("followup_date")
@@ -427,6 +634,7 @@ def followups():
         items.append({
             "record_id": r["id"],
             "patient_name": r.get("patient_name"),
+            "phone": r.get("phone"),
             "followup_date": fd,
             "status": _followup_status(fd),
             "referral_needed": bool(r.get("referral_needed")),
@@ -434,6 +642,62 @@ def followups():
     order = {"overdue": 0, "due": 1, "upcoming": 2, "unknown": 3}
     items.sort(key=lambda x: (order.get(x["status"], 3), x["followup_date"]))
     return {"followups": items}
+
+
+# ---------------------------------------------------------------- patient chat (WhatsApp-like, offline)
+CHATS = DATA_DIR / "chats.json"
+
+
+def _load_chats():
+    return _read_json(CHATS, {})
+
+
+def _save_chats(chats):
+    _write_json(CHATS, chats)
+
+
+def _patient_key(name, phone):
+    return (phone or "").strip() or (name or "").strip().lower()
+
+
+@app.get("/patients")
+def patients(request: Request):
+    _require_auth(request)
+    """Patients with phone numbers, derived from confirmed records."""
+    seen = {}
+    for r in _load_outbox():
+        key = _patient_key(r.get("patient_name"), r.get("phone"))
+        if not key:
+            continue
+        seen[key] = {"key": key, "patient_name": r.get("patient_name"),
+                     "phone": r.get("phone")}
+    return {"patients": list(seen.values())}
+
+
+class MsgIn(BaseModel):
+    patient_key: str
+    dir: str  # 'out' = nurse -> patient, 'in' = patient -> nurse
+    text: str
+    intent: str | None = None
+
+
+@app.get("/messages")
+def messages(patient_key: str, request: Request):
+    _require_auth(request)
+    return {"messages": _load_chats().get(patient_key, [])}
+
+
+@app.post("/messages")
+def add_message(m: MsgIn, request: Request):
+    _require_auth(request)
+    chats = _load_chats()
+    thread = chats.setdefault(m.patient_key, [])
+    msg = {"id": uuid.uuid4().hex[:8], "dir": m.dir, "text": m.text,
+           "intent": m.intent,
+           "ts": datetime.now().isoformat(timespec="seconds")}
+    thread.append(msg)
+    _save_chats(chats)
+    return {"ok": True, "message": msg}
 
 
 # ---------------------------------------------------------------- SMS drafts (deterministic templates, no LLM)
@@ -469,9 +733,13 @@ class ReplyIn(BaseModel):
     text: str
 
 
-CAME_WORDS = ["nimefika", "nimekuja", "nipo", "nimehudhuria", "asante nimekuja"]
-CANT_WORDS = ["siwezi", "sitaweza", "nashindwa", "sita", "ngumu"]
-HELP_WORDS = ["msaada", "dharura", "shida", "hatari", "maumivu makali"]
+CAME_WORDS = ["nimefika", "nimekuja", "nipo", "nimehudhuria", "asante nimekuja",
+              "i have come", "i'm here", "i am here", "i have arrived", "arrived"]
+CANT_WORDS = ["siwezi", "sitaweza", "nashindwa", "sita", "ngumu",
+              "can't come", "cannot come", "won't come", "will not come",
+              "unable to come"]
+HELP_WORDS = ["msaada", "dharura", "shida", "hatari", "maumivu makali",
+              "need help", "emergency", "urgent"]
 
 
 @app.post("/reply-classify")

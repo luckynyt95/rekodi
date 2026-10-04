@@ -8,8 +8,22 @@
 </head>
 <body>
 <div class="phone">
+  <div id="lock-screen">
+    <div class="lock-card">
+      <div class="lock-emoji">🔒</div>
+      <h2 id="lock-title">Ingia · Worker login</h2>
+      <p class="muted" id="lock-sub">Ingia kuona rekodi za wagonjwa.<br>Log in to access patient records.</p>
+      <input id="lock-name" placeholder="Jina · Full name" autocomplete="off" class="hidden">
+      <input id="lock-user" placeholder="Username" autocomplete="username">
+      <input id="lock-pass" type="password" placeholder="Nywila · Password" autocomplete="current-password">
+      <input id="lock-pass2" type="password" placeholder="Rudia nywila · Repeat password" autocomplete="new-password" class="hidden">
+      <button id="lock-btn" class="primary">Ingia<br><small>Log in</small></button>
+      <p><a href="#" id="lock-toggle" class="lock-toggle">Mpya hapa? Jisajili · New? Register</a></p>
+      <p id="lock-err" class="status"></p>
+    </div>
+  </div>
   <header>
-    <div class="brand">🎙️ Rekodi <span class="tag">offline-first</span></div>
+    <div class="brand">🎙️ Rekodi <span class="tag">offline-first</span> <button id="btn-lock" class="lockbtn" title="Funga · Lock">🔒 <span id="worker-name"></span></button></div>
     <div class="sub">Kliniki companion · Nurse companion</div>
   </header>
 
@@ -18,6 +32,7 @@
     <button data-view="visit">🎤<small>Ziara mpya<br>New visit</small></button>
     <button data-view="outbox">📥<small>Sanduku<br>Outbox</small></button>
     <button data-view="followups">📅<small>Miadi<br>Follow-ups</small></button>
+    <button data-view="chat">💬<small>Ujumbe<br>Chat</small></button>
     <button data-view="guardrails">🛡️<small>Ulinzi<br>Guardrails</small></button>
   </nav>
 
@@ -80,7 +95,7 @@
       Records stored on this phone. Sync to DHIS2 when you have connectivity.</p>
       <div id="outbox-list"></div>
       <button id="btn-sync" class="primary">🔄 Tayarisha ujumbe wa DHIS2<br><small>Prepare DHIS2 payload</small></button>
-      <pre id="sync-preview" class="hidden code"></pre>
+      <div id="sync-preview" class="hidden"></div>
     </section>
 
     <!-- FOLLOWUPS -->
@@ -89,14 +104,41 @@
       <div id="followup-list"></div>
       <div id="sms-box" class="hidden">
         <h3>Ujumbe wa SMS · SMS draft</h3>
+        <p id="sms-to" class="muted"></p>
         <p id="sms-text" class="sms"></p>
         <div class="row">
           <a id="sms-link" class="btn primary" href="#">📩 Tuma kwa SMS<br><small>Send via SMS</small></a>
         </div>
         <h4>Jibu la mgonjwa · Patient reply</h4>
-        <input id="reply-input" placeholder="Andika jibu la mgonjwa…">
+        <p class="muted">Mgonjwa akijibu SMS yako, andika hapa alichoandika — Rekodi itakuambia maana yake na cha kufanya.<br>If the patient replies to your SMS, type what they wrote here — Rekodi will tell you what it means and what to do.</p>
+        <input id="reply-input" placeholder="Andika jibu la mgonjwa… · Type patient's reply…">
         <button id="btn-classify" class="ghost">🔍 Bainisha jibu<br><small>Classify reply</small></button>
         <div id="reply-result" class="status"></div>
+      </div>
+    </section>
+
+    <!-- CHAT -->
+    <section id="view-chat" class="view">
+      <h2>Ujumbe · Patient chat</h2>
+      <p class="muted">Mazungumzo na wagonjwa — kama WhatsApp, lakini inafanya kazi bila intaneti.<br>Conversations with patients — like WhatsApp, but works offline.</p>
+      <div id="chat-patients"></div>
+      <div id="chat-thread" class="hidden">
+        <button id="chat-back" class="ghost small">← Wagonjwa · Patients</button>
+        <h3 id="chat-name"></h3>
+        <div id="chat-msgs" class="chat-msgs"></div>
+        <div class="row">
+          <input id="chat-input" placeholder="Andika ujumbe… · Type a message…">
+          <button id="chat-send" class="primary">📩 Tuma<br><small>Send</small></button>
+        </div>
+        <div class="row">
+          <button id="chat-voice" class="ghost">🎤 Jibu la sauti · Voice reply</button>
+          <button id="chat-type" class="ghost">✍️ Andika jibu · Type reply</button>
+        </div>
+        <div id="chat-reply-box" class="hidden">
+          <textarea id="chat-reply-text" rows="2" placeholder="Andika alichoandika mgonjwa… · Type what the patient wrote…"></textarea>
+          <button id="chat-reply-save" class="primary">Bainisha na hifadhi<br><small>Classify & save</small></button>
+          <p id="chat-rec-status" class="status"></p>
+        </div>
       </div>
     </section>
 

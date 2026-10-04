@@ -7,6 +7,31 @@ record (fixing anything flagged "not sure"), confirms — the record is saved, t
 follow-up scheduled, an SMS reminder drafted. All **offline**, on her own phone.
 **Never diagnoses. Never suggests treatment.** Human confirms everything.
 
+A per-patient **chat view** keeps the whole conversation in one thread — reminders
+sent (via the phone's SMS app, number prefilled) and patient replies, which the
+nurse can type or record as voice (transcribed offline) and which are
+automatically classified (coming / can't come / needs help). WhatsApp-style,
+fully offline.
+
+## Security
+
+- **Worker accounts:** username + password (PBKDF2-hashed, server-side). Multiple
+  workers can share one clinic phone, each with their own login; every confirmed
+  record stamps who confirmed it.
+- **Sessions:** login returns a token, sent as `X-Token` on every patient-data
+  API call. No token → 401. Tokens live in server memory; a restart logs
+  everyone out.
+- **Encrypted at rest:** `data/outbox.json` and `data/chats.json` are
+  Fernet-encrypted (key in `data/.key`, mode 0600). Plain-text files from older
+  versions are migrated automatically on first write.
+- **Demo login for judges:** username `demo`, password `rekodi-demo`.
+- **Honest limits:** the demo ships its device key (`data/.key`) so judges can run
+  it immediately — **production deployments must delete `data/.key`** so a fresh
+  key is generated on first run, and the full device imaging threat is handled
+  by server-side key management. The stateless AI utilities
+  (`/transcribe`, `/extract`, `/sms-draft`, `/reply-classify`) need no auth;
+  everything touching patient records does.
+
 ## Quick start (demo)
 
 ```bash
@@ -65,6 +90,9 @@ real DHIS2 `/api/events` shape, but with placeholder IDs
    - The facility's `orgUnit` UID
    - The target `program` + `programStage` UIDs, and the UID mapping for each
      field below (their HMIS form's data elements).
+   Then set `MINISTRY = {"connected": True, "base_url": ..., "orgUnit": ...}`
+   in `backend/app.py`. Until then the app shows "ministry not connected —
+   records safe on this phone" instead of erroring.
 2. **Field mapping** — replace the `REKODI_*` placeholders in `backend/app.py`
    (`sync_preview()`) with the ministry's data element UIDs:
 
@@ -72,16 +100,20 @@ real DHIS2 `/api/events` shape, but with placeholder IDs
    |---------------------|----------------------------|
    | patient_name        | Amina Juma                 |
    | age                 | 32                         |
+   | phone               | +255712345678 (worker-entered) |
    | summary             | Homa na kikohozi siku 3    |
    | treatment_given     | (as documented by worker)  |
    | followup_date       | 2026-09-30                 |
    | referral_needed     | true/false                 |
    | transcript          | full Swahili transcript    |
 
-3. **Sync flow (store-and-forward):** worker-confirmed records queue in the
-   on-device outbox (`sync_status: "pending"`) → when connectivity returns, the
-   app POSTs the payload to `<DHIS2>/api/events` → on HTTP 200 the record is
-   marked `"synced"` (never re-sent). Nothing syncs without the worker's
+3. **Sync flow (store-and-forward, automatic):** worker-confirmed records queue in the
+   on-device outbox (`sync_status: "pending"`) → the app tries to send them by
+   itself whenever internet *and* ministry are both available: on login, right
+   after each confirmed record, when connectivity returns, and every 60 seconds
+   (`POST /sync-send`). A small toast confirms ("✓ 3 records sent to ministry").
+   On HTTP 2xx the record is marked `"synced"` (never re-sent); on any failure
+   it stays `"pending"` and retries later. Nothing syncs without the worker's
    explicit confirmation, and the phone always keeps its local copy.
 4. **Security:** all AI runs on-device; only the confirmed structured record
    leaves the phone, over TLS, to the ministry's own server. No third-party
