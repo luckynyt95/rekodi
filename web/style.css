@@ -1,0 +1,74 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: #0f172a; color: #1e293b;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  display: flex; justify-content: center; min-height: 100vh; padding: 12px;
+}
+.phone {
+  width: 100%; max-width: 430px; background: #f8fafc;
+  border-radius: 28px; overflow: hidden; display: flex; flex-direction: column;
+  border: 6px solid #1e293b; min-height: 92vh;
+}
+header { background: #0d9488; color: #fff; padding: 14px 16px; }
+.brand { font-size: 1.35rem; font-weight: 800; }
+.tag { font-size: .65rem; background: #115e59; border-radius: 8px; padding: 2px 8px; vertical-align: middle; }
+.sub { font-size: .75rem; opacity: .9; }
+nav { display: flex; background: #fff; border-bottom: 1px solid #e2e8f0; }
+nav button {
+  flex: 1; border: 0; background: none; padding: 8px 2px; font-size: 1.1rem;
+  color: #64748b; cursor: pointer; line-height: 1.1;
+}
+nav button small { display: block; font-size: .58rem; }
+nav button.active { color: #0d9488; border-bottom: 3px solid #0d9488; }
+main { flex: 1; padding: 14px; overflow-y: auto; }
+.view { display: none; }
+.view.active { display: block; }
+h2 { margin: 4px 0 8px; font-size: 1.15rem; }
+h3 { font-size: 1rem; margin: 12px 0 6px; }
+.muted { color: #64748b; font-size: .85rem; }
+.cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+.card {
+  border: 1px solid #cbd5e1; border-radius: 14px; background: #fff; padding: 14px;
+  font-size: 1.4rem; cursor: pointer; text-align: left;
+}
+.card b { display: block; font-size: .9rem; margin-top: 4px; }
+.card small { color: #64748b; font-size: .7rem; }
+.stats { display: flex; gap: 10px; }
+.stat { flex: 1; background: #fff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 10px; text-align: center; }
+.stat b { font-size: 1.5rem; color: #0d9488; display: block; }
+.stat small { color: #64748b; font-size: .7rem; }
+button.primary, a.btn.primary {
+  background: #0d9488; color: #fff; border: 0; border-radius: 12px;
+  padding: 12px 14px; font-size: .95rem; cursor: pointer; width: 100%;
+  display: block; text-align: center; text-decoration: none; margin: 8px 0;
+}
+button.primary:disabled { background: #99c9c4; }
+button.danger { background: #dc2626; color: #fff; border: 0; border-radius: 12px; padding: 12px; cursor: pointer; }
+button.danger:disabled { background: #f3b4b4; }
+button.ghost { background: #fff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 10px 12px; cursor: pointer; margin: 6px 0; }
+button.small { font-size: .8rem; padding: 6px 10px; }
+.row { display: flex; gap: 8px; }
+.row > * { flex: 1; }
+.upload { display: block; margin: 10px 0; font-size: .85rem; color: #475569; }
+.upload input { display: block; margin-top: 6px; }
+.hidden { display: none !important; }
+.status { margin: 8px 0; font-size: .85rem; }
+.transcript { background: #fff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px; font-size: .9rem; }
+.notice { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 10px; padding: 10px; font-size: .82rem; margin-bottom: 10px; }
+.field { display: block; background: #fff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px; margin: 8px 0; }
+.field span { font-size: .8rem; font-weight: 700; display: block; margin-bottom: 4px; }
+.field input, .field textarea, .field select { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: .9rem; }
+.field .badge { font-size: .75rem; color: #b45309; display: block; margin-top: 4px; }
+.field.conf-high { border-left: 5px solid #16a34a; }
+.field.conf-medium { border-left: 5px solid #f59e0b; }
+.field.conf-low { border-left: 5px solid #dc2626; }
+.rec { background: #fff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px; margin: 8px 0; font-size: .85rem; }
+.rec.overdue { border-left: 5px solid #dc2626; }
+.rec.due { border-left: 5px solid #f59e0b; }
+.pill { font-size: .65rem; background: #e2e8f0; border-radius: 8px; padding: 2px 8px; }
+.sms { background: #ecfdf5; border: 1px solid #6ee7b7; border-radius: 10px; padding: 10px; font-size: .9rem; }
+.code { background: #1e293b; color: #a7f3d0; border-radius: 10px; padding: 10px; font-size: .68rem; overflow-x: auto; max-height: 320px; }
+.guards li { margin: 10px 0; font-size: .88rem; }
+#reply-input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 10px; margin: 6px 0; }
+footer { text-align: center; font-size: .68rem; color: #94a3b8; padding: 10px; }
+audio { width: 100%; margin-top: 8px; }

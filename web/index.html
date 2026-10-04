@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rekodi — Muuguzi / Nurse companion</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="phone">
+  <header>
+    <div class="brand">🎙️ Rekodi <span class="tag">offline-first</span></div>
+    <div class="sub">Kliniki companion · Nurse companion</div>
+  </header>
+
+  <nav>
+    <button data-view="home" class="active">🏠<small>Nyumbani<br>Home</small></button>
+    <button data-view="visit">🎤<small>Ziara mpya<br>New visit</small></button>
+    <button data-view="outbox">📥<small>Sanduku<br>Outbox</small></button>
+    <button data-view="followups">📅<small>Miadi<br>Follow-ups</small></button>
+    <button data-view="guardrails">🛡️<small>Ulinzi<br>Guardrails</small></button>
+  </nav>
+
+  <main>
+    <!-- HOME -->
+    <section id="view-home" class="view active">
+      <h2>Karibu · Welcome</h2>
+      <p class="muted">Rekodi inasaidia muuguzi kurekodi ziara kwa sauti ya Kiswahili,
+      kisha kuandaa muhtasari — <b>hakuna uchunguzi, hakuna dawa inapendekezwa</b>.
+      Rekodi helps the nurse record visits by Swahili voice, then drafts the record —
+      <b>no diagnosis, no treatment suggested</b>.</p>
+      <div class="cards">
+        <button class="card" data-goto="visit">🎤<b>Ziara mpya</b><small>New visit — record voice note</small></button>
+        <button class="card" data-goto="followups">📅<b>Miadi ya leo</b><small>Today's follow-ups</small></button>
+      </div>
+      <div id="home-stats" class="stats"></div>
+    </section>
+
+    <!-- NEW VISIT -->
+    <section id="view-visit" class="view">
+      <h2>Ziara mpya · New visit</h2>
+      <p class="muted">Rekodi sauti ya Kiswahili (~dakika 1). Hufanya kazi bila intaneti.
+      Record a Swahili voice note (~1 min). Works offline.</p>
+      <div class="row">
+        <button id="btn-record" class="primary">⏺️ Anza kurekodi<br><small>Start recording</small></button>
+        <button id="btn-stop" class="danger" disabled>⏹️ Maliza<br><small>Stop</small></button>
+      </div>
+      <label class="upload">au pakia faili ya sauti · or upload audio
+        <input type="file" id="file-audio" accept="audio/*">
+      </label>
+      <audio id="player" controls class="hidden"></audio>
+      <div id="rec-status" class="status"></div>
+      <button id="btn-transcribe" class="primary hidden">📝 Nakili sauti → maandishi<br><small>Transcribe</small></button>
+      <div id="transcript-box" class="hidden">
+        <h3>Nakala · Transcript</h3>
+        <p id="transcript-text" class="transcript"></p>
+        <button id="btn-extract" class="primary">🧠 Tayarisha rekodi<br><small>Draft record (AI)</small></button>
+      </div>
+    </section>
+
+    <!-- REVIEW -->
+    <section id="view-review" class="view">
+      <h2>Hakiki · Review</h2>
+      <div class="notice">⚠️ <b>Rekodi haichunguzi wala kupendekeza dawa.</b> Inarekodi tu
+      ulichosema. Angalia kila sehemu na uthibitishe.
+      <b>Rekodi does not diagnose or suggest treatment.</b> It only records what you said.
+      Check every field, then confirm.</div>
+      <div id="review-fields"></div>
+      <div class="row">
+        <button id="btn-confirm" class="primary">✅ Thibitisha &amp; hifadhi<br><small>Confirm &amp; save</small></button>
+        <button id="btn-discard" class="ghost" data-goto="visit">↩️ Tupa<br><small>Discard</small></button>
+      </div>
+      <div id="review-status" class="status"></div>
+    </section>
+
+    <!-- OUTBOX -->
+    <section id="view-outbox" class="view">
+      <h2>Sanduku la kutoka · Outbox</h2>
+      <p class="muted">Rekodi zilizohifadhiwa kwenye simu. Tuma DHIS2 unapopata intaneti.
+      Records stored on this phone. Sync to DHIS2 when you have connectivity.</p>
+      <div id="outbox-list"></div>
+      <button id="btn-sync" class="primary">🔄 Tayarisha ujumbe wa DHIS2<br><small>Prepare DHIS2 payload</small></button>
+      <pre id="sync-preview" class="hidden code"></pre>
+    </section>
+
+    <!-- FOLLOWUPS -->
+    <section id="view-followups" class="view">
+      <h2>Miadi · Follow-ups</h2>
+      <div id="followup-list"></div>
+      <div id="sms-box" class="hidden">
+        <h3>Ujumbe wa SMS · SMS draft</h3>
+        <p id="sms-text" class="sms"></p>
+        <div class="row">
+          <a id="sms-link" class="btn primary" href="#">📩 Tuma kwa SMS<br><small>Send via SMS</small></a>
+        </div>
+        <h4>Jibu la mgonjwa · Patient reply</h4>
+        <input id="reply-input" placeholder="Andika jibu la mgonjwa…">
+        <button id="btn-classify" class="ghost">🔍 Bainisha jibu<br><small>Classify reply</small></button>
+        <div id="reply-result" class="status"></div>
+      </div>
+    </section>
+
+    <!-- GUARDRAILS -->
+    <section id="view-guardrails" class="view">
+      <h2>Ulinzi · Guardrails</h2>
+      <ul class="guards">
+        <li>🚫 <b>Haichunguzi.</b> Kamwe haipendekezi ugonjwa au dawa. <b>Never diagnoses</b> or suggests treatment.</li>
+        <li>👩‍⚕️ <b>Binadamu anaamua.</b> Hakuna kinachohifadhiwa bila uthibitisho wako. <b>Human decides.</b> Nothing saves without your confirm.</li>
+        <li>❓ <b>"Sina uhakika — uliza mtu".</b> Sehemu zisizo na uhakika zina alama. <b>"Not sure — ask a person"</b> badges on low-confidence fields.</li>
+        <li>📴 <b>Inafanya kazi bila intaneti.</b> Data inakaa kwenye simu. <b>Works offline.</b> Data stays on this phone.</li>
+        <li>📵 <b>Simu inapotea?</b> Rekodi zimehifadhiwa kama maandishi ya kawaida — futa programu au weka upya simu. <b>Lost phone?</b> Records are plain JSON — wipe the app or reset the phone.</li>
+      </ul>
+      <h3>Data inakaa wapi · Where data sits</h3>
+      <p class="muted">Kwenye simu hii tu (outbox.json), hadi utakapotuma kwa mfumo wa wizara (DHIS2).
+      Inasomwa na muuguzi na wasimamizi wa kliniki tu. On this phone only, until you sync to the ministry system (DHIS2). Read only by the nurse and clinic supervisors.</p>
+    </section>
+  </main>
+
+  <footer>Rekodi v0.1 · demo · AI inasaidia, binadamu anaamua</footer>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

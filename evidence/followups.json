@@ -1,0 +1,32 @@
+{
+  "followups": [
+    {
+      "record_id": "demo0001",
+      "patient_name": "Amina Juma",
+      "followup_date": "2026-09-30",
+      "status": "overdue",
+      "referral_needed": false
+    },
+    {
+      "record_id": "demo0002",
+      "patient_name": "Neema Peter",
+      "followup_date": "2026-10-04",
+      "status": "due",
+      "referral_needed": false
+    },
+    {
+      "record_id": "demo0003",
+      "patient_name": "Juma Mwanza",
+      "followup_date": "2026-10-09",
+      "status": "upcoming",
+      "referral_needed": true
+    },
+    {
+      "record_id": "47489277",
+      "patient_name": "Amina Juma",
+      "followup_date": "2026-10-10",
+      "status": "upcoming",
+      "referral_needed": true
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "patient_name": "Amina Juma",
+  "age": "32",
+  "visit_date": "2026-10-04",
+  "summary": "Patient Amina Juma is 32 years old. She is 32 years old. She came with fever and cough for three days. She was given fever medicine as the doctor instructed. She was told to return after seven days if she is not better. If she gets breathing difficulty, she has been referred to the big hospital.",
+  "treatment_given": "fever medicine",
+  "followup_relative": "after seven days",
+  "followup_date": "2026-10-10",
+  "referral_needed": true,
+  "field_confidence": {
+    "patient_name": "high",
+    "age": "high",
+    "visit_date": "high",
+    "summary": "high",
+    "treatment_given": "high",
+    "followup_relative": "high",
+    "followup_date": "high",
+    "referral_needed": "high"
+  },
+  "extractor": "qwen2.5-0.5b-instruct-q4_k_m",
+  "source_text": "Hello, I am Nurse Nor. Today is the 4th of October. The patient is called Amina Juma. She is 32 years old. She came with fever and cough for three days. I gave her fever medicine as the doctor instructed. I told her to return after seven days if she is not better. If she gets breathing difficulty, I have referred her to the big hospital."
+}

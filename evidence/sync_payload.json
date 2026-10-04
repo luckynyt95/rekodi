@@ -1,0 +1,141 @@
+{
+  "preview": true,
+  "target": "DHIS2 /api/events (ministry system, 70+ countries)",
+  "record_count": 4,
+  "events": [
+    {
+      "program": "REKODI_PRIMARY_CARE",
+      "programStage": "REKODI_VISIT",
+      "orgUnit": "CLINIC_ID_PLACEHOLDER",
+      "eventDate": "2026-09-23",
+      "status": "COMPLETED",
+      "dataValues": [
+        {
+          "dataElement": "REKODI_PATIENT_NAME",
+          "value": "Amina Juma"
+        },
+        {
+          "dataElement": "REKODI_AGE",
+          "value": "32"
+        },
+        {
+          "dataElement": "REKODI_SUMMARY",
+          "value": "Homa na kikohozi kwa siku tatu."
+        },
+        {
+          "dataElement": "REKODI_TREATMENT_GIVEN",
+          "value": "dawa ya kupunguza homa kama daktari alivyoagiza"
+        },
+        {
+          "dataElement": "REKODI_FOLLOWUP_DATE",
+          "value": "2026-09-30"
+        },
+        {
+          "dataElement": "REKODI_REFERRAL_NEEDED",
+          "value": "false"
+        },
+        {
+          "dataElement": "REKODI_TRANSCRIPT",
+          "value": "Mgonjwa anaitwa Amina Juma. Ana umri wa miaka thelathini na mbili. Amekuja na homa na kikohozi kwa siku tatu."
+        }
+      ],
+      "notes": [
+        {
+          "storedBy": "rekodi",
+          "value": "Worker-confirmed record. AI draft reviewed by health worker before save. No diagnosis suggested."
+        }
+      ]
+    },
+    {
+      "program": "REKODI_PRIMARY_CARE",
+      "programStage": "REKODI_VISIT",
+      "orgUnit": "CLINIC_ID_PLACEHOLDER",
+      "eventDate": "2026-10-01",
+      "status": "COMPLETED",
+      "dataValues": [
+        {
+          "dataElement": "REKODI_PATIENT_NAME",
+          "value": "Neema Peter"
+        },
+        {
+          "dataElement": "REKODI_AGE",
+          "value": "45"
+        },
+        {
+          "dataElement": "REKODI_SUMMARY",
+          "value": "Maumivu ya kichwa kwa siku mbili."
+        },
+        {
+          "dataElement": "REKODI_TREATMENT_GIVEN",
+          "value": "panadol kama alivyoelekezwa na daktari"
+        },
+        {
+          "dataElement": "REKODI_FOLLOWUP_DATE",
+          "value": "2026-10-04"
+        },
+        {
+          "dataElement": "REKODI_REFERRAL_NEEDED",
+          "value": "false"
+        },
+        {
+          "dataElement": "REKODI_TRANSCRIPT",
+          "value": "Mgonjwa anaitwa Neema Peter, ana miaka 45. Amekuja na maumivu ya kichwa siku mbili."
+        }
+      ],
+      "notes": [
+        {
+          "storedBy": "rekodi",
+          "value": "Worker-confirmed record. AI draft reviewed by health worker before save. No diagnosis suggested."
+        }
+      ]
+    },
+    {
+      "program": "REKODI_PRIMARY_CARE",
+      "programStage": "REKODI_VISIT",
+      "orgUnit": "CLINIC_ID_PLACEHOLDER",
+      "eventDate": "2026-10-02",
+      "status": "COMPLETED",
+      "dataValues": [
+        {
+          "dataElement": "REKODI_PATIENT_NAME",
+          "value": "Juma Mwanza"
+        },
+        {
+          "dataElement": "REKODI_AGE",
+          "value": null
+        },
+        {
+          "dataElement": "REKODI_SUMMARY",
+          "value": "Mtoto ana homa. Mama ameambiwa ampe maji mengi."
+        },
+        {
+          "dataElement": "REKODI_TREATMENT_GIVEN",
+          "value": null
+        },
+        {
+          "dataElement": "REKODI_FOLLOWUP_DATE",
+          "value": "2026-10-09"
+        },
+        {
+          "dataElement": "REKODI_REFERRAL_NEEDED",
+          "value": "true"
+        },
+        {
+          "dataElement": "REKODI_TRANSCRIPT",
+          "value": "Mtoto Juma Mwanza ana homa. Nimemuelekeza mama kwenda hospitali kubwa."
+        }
+      ],
+      "notes": [
+        {
+          "storedBy": "rekodi",
+          "value": "Worker-confirmed record. AI draft reviewed by health worker before save. No diagnosis suggested."
+        }
+      ]
+    },
+    {
+      "program": "REKODI_PRIMARY_CARE",
+      "programStage": "REKODI_VISIT",
+      "orgUnit": "CLINIC_ID_PLACEHOLDER",
+      "eventDate": "2026-10-04",
+      "status": "COMPLETED",
+    

@@ -1,0 +1,99 @@
+[
+  {
+    "id": "demo0001",
+    "created_at": "2026-09-24T09:15:00",
+    "confirmed_by_worker": true,
+    "sync_status": "pending",
+    "patient_name": "Amina Juma",
+    "age": "32",
+    "visit_date": "2026-09-24",
+    "summary": "Homa na kikohozi kwa siku tatu.",
+    "treatment_given": "dawa ya kupunguza homa kama daktari alivyoagiza",
+    "followup_date": "2026-10-01",
+    "referral_needed": false,
+    "transcript": "Mgonjwa anaitwa Amina Juma. Ana umri wa miaka thelathini na mbili. Amekuja na homa na kikohozi kwa siku tatu.",
+    "extractor": "qwen2.5-0.5b-instruct-q4_k_m",
+    "field_confidence": {
+      "patient_name": "high",
+      "age": "high",
+      "visit_date": "high",
+      "summary": "high",
+      "treatment_given": "high",
+      "followup_date": "high",
+      "referral_needed": "high"
+    }
+  },
+  {
+    "id": "demo0002",
+    "created_at": "2026-10-02T11:40:00",
+    "confirmed_by_worker": true,
+    "sync_status": "pending",
+    "patient_name": "Neema Peter",
+    "age": "45",
+    "visit_date": "2026-10-02",
+    "summary": "Maumivu ya kichwa kwa siku mbili.",
+    "treatment_given": "panadol kama alivyoelekezwa na daktari",
+    "followup_date": "2026-10-05",
+    "referral_needed": false,
+    "transcript": "Mgonjwa anaitwa Neema Peter, ana miaka 45. Amekuja na maumivu ya kichwa siku mbili.",
+    "extractor": "qwen2.5-0.5b-instruct-q4_k_m",
+    "field_confidence": {
+      "patient_name": "high",
+      "age": "high",
+      "visit_date": "medium",
+      "summary": "high",
+      "treatment_given": "medium",
+      "followup_date": "high",
+      "referral_needed": "high"
+    }
+  },
+  {
+    "id": "demo0003",
+    "created_at": "2026-10-03T08:05:00",
+    "confirmed_by_worker": true,
+    "sync_status": "pending",
+    "patient_name": "Juma Mwanza",
+    "age": null,
+    "visit_date": "2026-10-03",
+    "summary": "Mtoto ana homa. Mama ameambiwa ampe maji mengi.",
+    "treatment_given": null,
+    "followup_date": "2026-10-10",
+    "referral_needed": true,
+    "transcript": "Mtoto Juma Mwanza ana homa. Nimemuelekeza mama kwenda hospitali kubwa.",
+    "extractor": "heuristic_v1",
+    "field_confidence": {
+      "patient_name": "medium",
+      "age": "low",
+      "visit_date": "medium",
+      "summary": "medium",
+      "treatment_given": "low",
+      "followup_date": "medium",
+      "referral_needed": "medium"
+    }
+  },
+  {
+    "patient_name": "Amina Juma",
+    "age": "32",
+    "visit_date": "2026-10-04",
+    "summary": "Patient Amina Juma is 32 years old. She is 32 years old. She came with fever and cough for three days. She was given fever medicine as the doctor instructed. She has been advised to return after seven days if she is not better. If she gets breathing difficulty, she has been referred to the big hospital.",
+    "treatment_given": "fever medicine",
+    "followup_date": "2026-10-11",
+    "referral_needed": true,
+    "transcript": "Hello, I am Nurse Nor. Today is the 4th of October. The patient is called Amina Juma. She is 32 years old. She came with fever and cough for three days. I gave her fever medicine as the doctor instructed. I told her to return after seven days if she is not better. If she gets breathing difficulty, I have referred her to the big hospital.",
+    "extractor": "qwen2.5-0.5b-instruct-q4_k_m",
+    "field_confidence": {
+      "patient_name": "high",
+      "age": "high",
+      "visit_date": "medium",
+      "summary": "high",
+      "treatment_given": "high",
+      "followup_relative": "high",
+      "followup_date": "high",
+      "referral_needed": "high"
+    },
+    "id": "c0cd3208",
+    "created_at": "2026-10-04T08:06:36",
+    "confirmed_by_worker": true,
+    "sync_status": "pending"
+  }
+]

@@ -1,0 +1,1 @@
+NOTE: Swahili TTS (--language sw) returned empty audio on 4 attempts (2026-10-03 ~21:55-21:57 IST) while English worked. Demo audio is English; production Swahili path: record a real speaker or fine-tune on Mozilla Common Voice Swahili (CC0). Script: voice_note_script.txt
